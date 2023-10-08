@@ -1,0 +1,195 @@
+from automata.fa.nfa import NFA
+from allen import compute_allen_count
+from typing import List
+from combinatorics import calculate_long_relation_count_superposed
+
+def get_clock_fsm(count):
+
+    if count < 2:
+        raise Exception("Too few states for clock")
+
+    start_clock = State("0")
+    clock_fsm = FSM(start_clock)
+    clock_fsm.add_state(State(str(count - 1)))
+    clock_fsm.mark_state_as_final(str(count - 1))
+
+    for i in range(1, count, 1):
+        clock_fsm.add_state(State(str(i)))
+        clock_fsm.add_transition(str(i - 1), str(i), "t")
+
+    return clock_fsm
+
+class State:
+    def __init__(self, label):
+        self.label = label
+        self.transitions = {}
+    
+    def add_transition(self, other, symbol):
+        self.transitions[symbol] = other
+
+
+class FSM:
+    def __init__(self, start):
+        self.start = start
+        self.states = {}
+        self.final_states = set()
+        self.states[self.start.label] = self.start
+        self.alphabet = set()
+
+    def add_state(self, state):
+        self.states[state.label] = state
+
+    def mark_state_as_final(self, state_label):
+        self.final_states.add(state_label)
+    
+    def add_transition(self, prev_state_label, next_state_label, symbol: str):
+        self.alphabet.add(symbol)
+        self.states[prev_state_label].add_transition(self.states[next_state_label], symbol)
+
+    def find_all_paths_to_final_state(self):
+        ans = []
+        self._find_all_paths_to_final_state_helper(ans, [], self.start)
+        return ans
+
+    def _find_all_paths_to_final_state_helper(self, paths: List[List[str]], current_path: List[str], current_state: State):
+        if current_state.label in self.final_states:
+            paths.append(current_path.copy())
+
+        for symbol, next_state in current_state.transitions.items():
+            current_path.append(symbol)
+            self._find_all_paths_to_final_state_helper(paths, current_path, self.states[next_state.label])
+            current_path.pop(-1)
+
+
+
+    def superpose(self, other, is_clock = False):
+        start_state = (State(self.start.label + "," + other.start.label), self.start.label, other.start.label)
+
+        super_fsm = FSM(start_state[0])
+
+        state_queue = []
+        state_queue.append(start_state)
+
+        while len(state_queue) > 0:
+            current_state = state_queue.pop(0)
+
+            fsm1_cur_state_label = current_state[1]
+            fsm2_cur_state_label = current_state[2]
+            super_fsm_label = current_state[0].label
+
+            if not is_clock:
+                for symbol, next_state in self.states[fsm1_cur_state_label].transitions.items():
+                    new_state = State(next_state.label+","+fsm2_cur_state_label)
+                    super_fsm.add_state(new_state)
+                    if is_clock and next_state.label in self.final_states:
+                        super_fsm.mark_state_as_final(new_state.label)
+                    elif next_state.label in self.final_states and fsm2_cur_state_label in other.final_states:
+                        super_fsm.mark_state_as_final(new_state.label)
+     
+                    super_fsm.add_transition(super_fsm_label, new_state.label, symbol)
+                    state_queue.append((new_state, next_state.label, fsm2_cur_state_label))
+
+            for symbol, next_state in other.states[fsm2_cur_state_label].transitions.items():
+                new_state = State(fsm1_cur_state_label+","+next_state.label)
+                super_fsm.add_state(new_state)
+                if (is_clock and fsm1_cur_state_label in self.final_states):
+                    super_fsm.mark_state_as_final(new_state.label)
+                elif next_state.label in other.final_states and fsm1_cur_state_label in self.final_states:
+                    super_fsm.mark_state_as_final(new_state.label)
+
+                super_fsm.add_transition(super_fsm_label, new_state.label, symbol)
+                state_queue.append((new_state, fsm1_cur_state_label, next_state.label))
+
+
+            for symbol_1, next_state_1 in self.states[fsm1_cur_state_label].transitions.items():
+                for symbol_2, next_state_2 in other.states[fsm2_cur_state_label].transitions.items():
+                    new_state = State(next_state_1.label+","+next_state_2.label)
+                    super_fsm.add_state(new_state)
+                    if is_clock and next_state_1.label in self.final_states:
+                        super_fsm.mark_state_as_final(new_state.label)
+                    elif next_state_1.label in self.final_states and next_state_2.label in other.final_states:
+                        super_fsm.mark_state_as_final(new_state.label)
+
+                    super_fsm.add_transition(super_fsm_label, new_state.label, symbol_1 + "," + symbol_2)
+                    state_queue.append((new_state, next_state_1.label, next_state_2.label))
+
+        return super_fsm
+
+
+    def format_as_string(self)->str:
+        string = f"State labels: {self.states.keys()}"
+
+        for state_label, state in self.states.items():
+            string += f"\n{state_label}:{[state_label + '->' + x[0] + '->' + x[1].label for x in state.transitions.items()]}"
+
+        return string
+
+    def visualize(self) -> NFA:
+        states = set(self.states.keys())
+
+        transitions = {}
+
+        for state_label, state in self.states.items():
+            transitions[state_label] = {}
+            
+            for symbol, next_state in state.transitions.items():
+                transitions[state_label][symbol] = set()
+                transitions[state_label][symbol].add(next_state.label)
+
+        initial_state = self.start.label
+        final_states = self.final_states
+        
+        input_symbols = self.alphabet
+
+        visual_dfa = NFA(
+            states=states,
+            input_symbols=input_symbols,
+            transitions=transitions,
+            initial_state=initial_state,
+            final_states=final_states,
+        )
+
+        return visual_dfa
+
+
+if __name__ == "__main__":
+    start_1 = State("u_a")
+    fsm_1 = FSM(start_1)
+    fsm_1.add_state(State("d_a"))
+    fsm_1.mark_state_as_final("d_a")
+    fsm_1.add_state(State("li_a"))
+
+    fsm_1.add_transition("u_a", "li_a", "la")
+    fsm_1.add_transition("li_a", "d_a", "ra")
+    fsm_1.visualize().show_diagram(path="./fsm1.png")
+
+    start_2 = State("u_b")
+    fsm_2 = FSM(start_2)
+    fsm_2.add_state(State("li_b"))
+    fsm_2.add_state(State("d_b"))
+    fsm_2.mark_state_as_final("d_b")
+
+    fsm_2.add_transition("u_b", "li_b", "lb")
+    fsm_2.add_transition("li_b", "d_b", "rb")
+    fsm_2.visualize().show_diagram(path="./fsm2.png")
+
+    super_pose_fsm = fsm_1.superpose(fsm_2)
+    super_pose_fsm.visualize().show_diagram(path="./superpose_simple.png")
+
+    overlaps_probabilities = {}
+    during_probabilities = {}
+
+    for clock_gran in range(5, 15, 1):
+        clock_fsm = get_clock_fsm(clock_gran)
+        clock_fsm.visualize().show_diagram(path=f"./clock_fsm_{clock_gran}.png")
+
+        clocked_intervals_fsm = super_pose_fsm.superpose(clock_fsm, is_clock=True)
+        clocked_intervals_fsm.visualize().show_diagram(path=f"./superpose_clock_{clock_gran}.png")
+        paths = clocked_intervals_fsm.find_all_paths_to_final_state()
+        allen_counts = compute_allen_count(paths)
+        
+        print(allen_counts)
+        print(f"clock: {clock_gran}")
+        print(
+            f"overlaps count (combinatorics): {calculate_long_relation_count_superposed(clock_gran - 1)}, simulated: {allen_counts['overlaps']}\n")
+    
