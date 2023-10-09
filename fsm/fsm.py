@@ -1,3 +1,6 @@
+import random
+import math
+
 from automata.fa.nfa import NFA
 from allen import compute_allen_count
 from typing import List
@@ -15,7 +18,7 @@ def get_clock_fsm(count):
 
     for i in range(1, count, 1):
         clock_fsm.add_state(State(str(i)))
-        clock_fsm.add_transition(str(i - 1), str(i), "t")
+        clock_fsm.add_transition(str(i - 1), str(i), "t", 1.0)
 
     return clock_fsm
 
@@ -23,9 +26,11 @@ class State:
     def __init__(self, label):
         self.label = label
         self.transitions = {}
+        self.probabilities = {}
     
-    def add_transition(self, other, symbol):
+    def add_transition(self, other, symbol, probability):
         self.transitions[symbol] = other
+        self.probabilities[symbol] = probability
 
 
 class FSM:
@@ -42,9 +47,9 @@ class FSM:
     def mark_state_as_final(self, state_label):
         self.final_states.add(state_label)
     
-    def add_transition(self, prev_state_label, next_state_label, symbol: str):
+    def add_transition(self, prev_state_label, next_state_label, symbol: str, probability):
         self.alphabet.add(symbol)
-        self.states[prev_state_label].add_transition(self.states[next_state_label], symbol)
+        self.states[prev_state_label].add_transition(self.states[next_state_label], symbol, probability)
 
     def find_all_paths_to_final_state(self):
         ans = []
@@ -85,8 +90,14 @@ class FSM:
                         super_fsm.mark_state_as_final(new_state.label)
                     elif next_state.label in self.final_states and fsm2_cur_state_label in other.final_states:
                         super_fsm.mark_state_as_final(new_state.label)
-     
-                    super_fsm.add_transition(super_fsm_label, new_state.label, symbol)
+
+                    probability_fsm1 = self.states[fsm1_cur_state_label].probabilities[symbol]
+                    probability_fsm2 = 1 - sum(
+                        [x[1] for x in other.states[fsm2_cur_state_label].probabilities.items()])
+                    probability = probability_fsm1 * probability_fsm2
+
+                    super_fsm.add_transition(
+                        super_fsm_label, new_state.label, symbol, probability)
                     state_queue.append((new_state, next_state.label, fsm2_cur_state_label))
 
             for symbol, next_state in other.states[fsm2_cur_state_label].transitions.items():
@@ -97,7 +108,12 @@ class FSM:
                 elif next_state.label in other.final_states and fsm1_cur_state_label in self.final_states:
                     super_fsm.mark_state_as_final(new_state.label)
 
-                super_fsm.add_transition(super_fsm_label, new_state.label, symbol)
+                probability_fsm1 = 1 - sum(
+                    [x[1] for x in self.states[fsm1_cur_state_label].probabilities.items()])
+                probability_fsm2 = other.states[fsm2_cur_state_label].probabilities[symbol]
+                probability = probability_fsm1 * probability_fsm2
+
+                super_fsm.add_transition(super_fsm_label, new_state.label, symbol, probability)
                 state_queue.append((new_state, fsm1_cur_state_label, next_state.label))
 
 
@@ -110,7 +126,12 @@ class FSM:
                     elif next_state_1.label in self.final_states and next_state_2.label in other.final_states:
                         super_fsm.mark_state_as_final(new_state.label)
 
-                    super_fsm.add_transition(super_fsm_label, new_state.label, symbol_1 + "," + symbol_2)
+                    probability_fsm1 = self.states[fsm1_cur_state_label].probabilities[symbol_1]
+                    probability_fsm2 = other.states[fsm2_cur_state_label].probabilities[symbol_2]
+                    probability = probability_fsm1 * probability_fsm2
+
+                    super_fsm.add_transition(
+                        super_fsm_label, new_state.label, symbol_1 + "," + symbol_2, probability)
                     state_queue.append((new_state, next_state_1.label, next_state_2.label))
 
         return super_fsm
@@ -124,22 +145,23 @@ class FSM:
 
         return string
 
-    def visualize(self) -> NFA:
+    def visualize(self, add_prob = False) -> NFA:
         states = set(self.states.keys())
 
         transitions = {}
-
+        input_symbols = set()
         for state_label, state in self.states.items():
             transitions[state_label] = {}
             
             for symbol, next_state in state.transitions.items():
-                transitions[state_label][symbol] = set()
-                transitions[state_label][symbol].add(next_state.label)
+                probability = state.probabilities[symbol]
+                symbol_eff = symbol if not add_prob else symbol + f"_{round(probability, 2)}"
+                input_symbols.add(symbol_eff)
+                transitions[state_label][symbol_eff] = set()
+                transitions[state_label][symbol_eff].add(next_state.label)
 
         initial_state = self.start.label
         final_states = self.final_states
-        
-        input_symbols = self.alphabet
 
         visual_dfa = NFA(
             states=states,
@@ -151,31 +173,37 @@ class FSM:
 
         return visual_dfa
 
+    def simulate(self):
+        current_state = self.states[self.start.label]
+        path = []
+        invalid = False
+        while current_state.label not in self.final_states:
 
-if __name__ == "__main__":
-    start_1 = State("u_a")
-    fsm_1 = FSM(start_1)
-    fsm_1.add_state(State("d_a"))
-    fsm_1.mark_state_as_final("d_a")
-    fsm_1.add_state(State("li_a"))
+            if len(current_state.transitions) <= 0:
+                invalid = True
+                break
 
-    fsm_1.add_transition("u_a", "li_a", "la")
-    fsm_1.add_transition("li_a", "d_a", "ra")
-    fsm_1.visualize().show_diagram(path="./fsm1.png")
+            random_number = random.random()
+            sum_of_prob = sum([x[1] for x in current_state.probabilities.items()])
 
-    start_2 = State("u_b")
-    fsm_2 = FSM(start_2)
-    fsm_2.add_state(State("li_b"))
-    fsm_2.add_state(State("d_b"))
-    fsm_2.mark_state_as_final("d_b")
+            current_sum_of_prob = 0.0
+            i = 0
 
-    fsm_2.add_transition("u_b", "li_b", "lb")
-    fsm_2.add_transition("li_b", "d_b", "rb")
-    fsm_2.visualize().show_diagram(path="./fsm2.png")
+            probabilities = list(current_state.probabilities.items())
 
-    super_pose_fsm = fsm_1.superpose(fsm_2)
-    super_pose_fsm.visualize().show_diagram(path="./superpose_simple.png")
+            while current_sum_of_prob / sum_of_prob < random_number:
+                current_sum_of_prob += probabilities[i][1]
+                i+=1
 
+            decision = probabilities[i-1][0]
+            next_state_label = current_state.transitions[decision].label
+            current_state = self.states[next_state_label]
+            path.append(decision)
+
+        return (path, invalid)
+
+
+def independent(super_pose_fsm):
     overlaps_probabilities = {}
     during_probabilities = {}
 
@@ -191,5 +219,51 @@ if __name__ == "__main__":
         print(allen_counts)
         print(f"clock: {clock_gran}")
         print(
-            f"overlaps count (combinatorics): {calculate_long_relation_count_superposed(clock_gran - 1)}, simulated: {allen_counts['overlaps']}\n")
+            (f"overlaps count (combinatorics): {calculate_long_relation_count_superposed(clock_gran - 1)}," 
+            f"simulated: {allen_counts['overlaps']}\n"))
+
+def monte_carlo(super_pose_fsm, gran, trials = 1000):
+    clock_fsm = get_clock_fsm(gran)
+    clocked_intervals_fsm = super_pose_fsm.superpose(clock_fsm, is_clock=True)
+    clocked_intervals_fsm.visualize(add_prob=True).show_diagram(
+        path=f"./superpose_clock_{gran}_probabilities.png")
+    trial_count = 0 
+
+    paths = []
+    while trial_count < trials:
+        path, invalid = clocked_intervals_fsm.simulate()
+
+        if not invalid:
+            paths.append(path)
+        
+        trial_count+=1
+
+    print(compute_allen_count(paths))
+
+
+if __name__ == "__main__":
+    start_1 = State("u_a")
+    fsm_1 = FSM(start_1)
+    fsm_1.add_state(State("d_a"))
+    fsm_1.mark_state_as_final("d_a")
+    fsm_1.add_state(State("li_a"))
+
+    fsm_1.add_transition("u_a", "li_a", "la", 0.5)
+    fsm_1.add_transition("li_a", "d_a", "ra", 0.2)
+    fsm_1.visualize().show_diagram(path="./fsm1.png")
+
+    start_2 = State("u_b")
+    fsm_2 = FSM(start_2)
+    fsm_2.add_state(State("li_b"))
+    fsm_2.add_state(State("d_b"))
+    fsm_2.mark_state_as_final("d_b")
+
+    fsm_2.add_transition("u_b", "li_b", "lb", 0.5)
+    fsm_2.add_transition("li_b", "d_b", "rb", 0.2)
+    fsm_2.visualize().show_diagram(path="./fsm2.png")
+
+    super_pose_fsm = fsm_1.superpose(fsm_2)
+    super_pose_fsm.visualize().show_diagram(path="./superpose_simple.png")
     
+    # independent(super_pose_fsm)
+    monte_carlo(super_pose_fsm, 7, 10000)

@@ -1,0 +1,5 @@
+1. Only adding clock does not solve issues such as p(duration) = p(overlap). Given that each of these relations
+is represented by 4 symbol string, the number of paths in the clocked automata is the same for both cases. The 
+number can be expressed as sum of combinations, please view combinatorics.py for the formula. Hence the probability,
+is the same.
+
