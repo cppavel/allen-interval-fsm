@@ -1,5 +1,10 @@
 from typing import List
 
+allowed_allen_transitions = [
+    'la','lb','rb','ra', 
+    'la,lb', 'la,rb','ra,lb','ra,rb'
+]
+
 allen_mapping = {
     "lb_rb_la_ra": "is preceded",
     "la_ra_lb_rb": "preceeds",
@@ -23,7 +28,7 @@ def depad(path: List[str]):
         x = x.replace(",t", "")
         x = x.replace("t", "")
 
-        if len(x) > 0:
+        if len(x) > 0 and x in allowed_allen_transitions:
             ans.append(x)
 
     return ans
@@ -38,9 +43,9 @@ def compute_allen_count(paths: List[List[str]]):
         if key in allen_mapping:
             key = allen_mapping[key]
 
-        if key in counts:
-            counts[key]+=1
-        else:
-            counts[key] = 1
+            if key in counts:
+                counts[key]+=1
+            else:
+                counts[key] = 1
 
     return counts
