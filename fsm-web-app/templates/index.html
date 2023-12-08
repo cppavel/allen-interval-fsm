@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSM Web App</title>
+</head>
+<body>
+    <h1>Finite State Machines</h1>
+    <ul>
+        {% for fsm_name in fsm_list %}
+            <li><a href="{{ url_for('edit_fsm', fsm_name=fsm_name) }}">{{ fsm_name }}</a></li>
+        {% endfor %}
+    </ul>
+    <form style="border: solid 2px black;"  action="{{ url_for('create_fsm') }}" method="post">
+        <label for="fsm_name">New FSM Name:</label>
+        <input type="text" id="fsm_name" name="fsm_name" required>
+        <label for="start_state">Start state:</label>
+        <input type="text" id="start_state" name="start_state" required>
+        <input type="submit" value="Create FSM">
+    </form>
+    <br/>
+     <form style="border: solid 2px black;"  action="{{ url_for('superpose_fsm') }}" method="get">
+        <label for="fsm1">Select FSM 1:</label>
+        <select id="fsm1" name="fsm1" required>
+            {% for fsm_name in fsm_list %}
+                <option value="{{ fsm_name }}">{{ fsm_name }}</option>
+            {% endfor %}
+        </select>
+        <label for="fsm2">Select FSM 2:</label>
+        <select id="fsm2" name="fsm2" required>
+            {% for fsm_name in fsm_list %}
+                <option value="{{ fsm_name }}">{{ fsm_name }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" value="Superpose FSMs">
+    </form>
+</body>
+</html>

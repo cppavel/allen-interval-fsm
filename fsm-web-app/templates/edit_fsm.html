@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit FSM - {{ fsm_name }}</title>
+</head>
+<body>
+    <h2>Add transition FSM - {{ fsm_name }}</h2>
+    <form style="border: solid 2px black;" action="{{ url_for('add_transition', fsm_name=fsm_name) }}" method="post">
+        <label for="source_state">Source State:</label>
+        <input type="text" id="source_state" name="source_state" required>
+        <br/>
+        <label for="target_state">Target State:</label>
+        <input type="text" id="target_state" name="target_state" required>
+        <br/>
+        <label for="probability">Probability:</label>
+        <input type="text" id="probability" name="probability" required>
+        <br/>
+        <label for="transition-label">Transition label:</label>
+        <input type="text" id="transition-label" name="transition-label" required>
+        <br/>
+        <input type="submit" value="Add Transition">
+    </form>
+    <h2>Mark state as final</h2>
+     <form style="border: solid 2px black;" action="{{ url_for('mark_final_state', fsm_name=fsm_name) }}" method="post">
+        <label for="state_name">Final state:</label>
+        <input type="text" id="state_name" name="state_name" required>
+        <br/>
+        <input type="submit" value="Mark as final">
+    </form>
+    <img src="data:image/png;base64,{{ fsm_image }}" alt="FSM Image">
+</body>
+</html>
