@@ -86,9 +86,8 @@ class FSM:
                 for symbol, next_state in self.states[fsm1_cur_state_label].transitions.items():
                     new_state = State(next_state.label+","+fsm2_cur_state_label)
                     super_fsm.add_state(new_state)
-                    if is_clock and next_state.label in self.final_states:
-                        super_fsm.mark_state_as_final(new_state.label)
-                    elif next_state.label in self.final_states and fsm2_cur_state_label in other.final_states:
+        
+                    if next_state.label in self.final_states and fsm2_cur_state_label in other.final_states:
                         super_fsm.mark_state_as_final(new_state.label)
 
                     probability_fsm1 = self.states[fsm1_cur_state_label].probabilities[symbol]
@@ -155,7 +154,8 @@ class FSM:
             
             for symbol, next_state in state.transitions.items():
                 probability = state.probabilities[symbol]
-                symbol_eff = symbol if not add_prob else symbol + f"_{probability}"
+                symbol_eff = (symbol 
+                        if not add_prob else symbol + f"_{probability}")
                 input_symbols.add(symbol_eff)
                 transitions[state_label][symbol_eff] = set()
                 transitions[state_label][symbol_eff].add(next_state.label)
@@ -243,38 +243,57 @@ def monte_carlo(super_pose_fsm, gran, trials = 1000):
 
 if __name__ == "__main__":
 
-    p_start = 0.25
-    p = 0.1
-    p_prime = 0.5
-    alpha = 0.5
+    # p_start = 0.25
+    # p = 0.1
+    # p_prime = 0.5
+    # alpha = 0.5
+
+    # start_1 = State("u_a")
+    # fsm_1 = FSM(start_1)
+    # fsm_1.add_state(State("li_a"))
+    # fsm_1.add_state(State("oli_a"))
+    # fsm_1.add_state(State("d_a"))
+    # fsm_1.mark_state_as_final("d_a")
+    # fsm_1.add_transition("u_a", "li_a", "la", p_start)
+    # fsm_1.add_transition("li_a", "oli_a","oa", (1 - alpha) * (1 - p))
+    # fsm_1.add_transition("li_a", "d_a", "ra", p)
+    # fsm_1.add_transition("oli_a", "d_a", "ra", p_prime)
+    # fsm_1.visualize(add_prob=True).show_diagram(path="./fsm1.png")
+
+    # start_2 = State("u_b")
+    # fsm_2 = FSM(start_2)
+    # fsm_2.add_state(State("li_b"))
+    # fsm_2.add_state(State("oli_b"))
+    # fsm_2.add_state(State("d_b"))
+    # fsm_2.mark_state_as_final("d_b")
+    # fsm_2.add_transition("u_b", "li_b", "lb", p_start)
+    # fsm_2.add_transition("li_b", "oli_b","ob", (1 - alpha) * (1 - p))
+    # fsm_2.add_transition("li_b", "d_b", "rb", p)
+    # fsm_2.add_transition("oli_b", "d_b", "rb", p_prime)
+    # fsm_2.visualize(add_prob=True).show_diagram(path="./fsm2.png")
+
 
     start_1 = State("u_a")
     fsm_1 = FSM(start_1)
     fsm_1.add_state(State("li_a"))
-    fsm_1.add_state(State("oli_a"))
     fsm_1.add_state(State("d_a"))
     fsm_1.mark_state_as_final("d_a")
-    fsm_1.add_transition("u_a", "li_a", "la", p_start)
-    fsm_1.add_transition("li_a", "oli_a","oa", (1 - alpha) * (1 - p))
-    fsm_1.add_transition("li_a", "d_a", "ra", p)
-    fsm_1.add_transition("oli_a", "d_a", "ra", p_prime)
-    fsm_1.visualize(add_prob=True).show_diagram(path="./fsm1.png")
+    fsm_1.add_transition("u_a", "li_a", "la", 0.5)
+    fsm_1.add_transition("li_a", "d_a", "ra", 0.5)
 
     start_2 = State("u_b")
     fsm_2 = FSM(start_2)
     fsm_2.add_state(State("li_b"))
-    fsm_2.add_state(State("oli_b"))
     fsm_2.add_state(State("d_b"))
     fsm_2.mark_state_as_final("d_b")
-    fsm_2.add_transition("u_b", "li_b", "lb", p_start)
-    fsm_2.add_transition("li_b", "oli_b","ob", (1 - alpha) * (1 - p))
-    fsm_2.add_transition("li_b", "d_b", "rb", p)
-    fsm_2.add_transition("oli_b", "d_b", "rb", p_prime)
-    fsm_2.visualize(add_prob=True).show_diagram(path="./fsm2.png")
+    fsm_2.add_transition("u_b", "li_b", "lb", 0.5)
+    fsm_2.add_transition("li_b", "d_b", "rb", 0.5)
 
-    super_pose_fsm = fsm_1.superpose(fsm_2)
-    super_pose_fsm.visualize(add_prob=True).show_diagram(
-        path="./superpose_simple.png")
+    superpose_fsm = fsm_1.superpose(fsm_2)
+    superpose_fsm.visualize(add_prob=True).show_diagram(path='./allen_fsm.png')
+
+    # super_pose_fsm.visualize(add_prob=True).show_diagram(
+    #     path="./superpose_simple.png")
     
-    # independent(super_pose_fsm)
-    monte_carlo(super_pose_fsm, 10, 1000000)
+    # # independent(super_pose_fsm)
+    # monte_carlo(super_pose_fsm, 10, 1000000)

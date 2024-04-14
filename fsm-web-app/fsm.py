@@ -112,9 +112,8 @@ class FSM:
                 for symbol, next_state in self.states[fsm1_cur_state_label].transitions.items():
                     new_state = State(next_state.label+","+fsm2_cur_state_label)
                     super_fsm.add_state(new_state)
-                    if is_clock and next_state.label in self.final_states:
-                        super_fsm.mark_state_as_final(new_state.label)
-                    elif next_state.label in self.final_states and fsm2_cur_state_label in other.final_states:
+
+                    if next_state.label in self.final_states and fsm2_cur_state_label in other.final_states:
                         super_fsm.mark_state_as_final(new_state.label)
 
                     probability_fsm1 = self.states[fsm1_cur_state_label].probabilities[symbol]
