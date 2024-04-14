@@ -21,7 +21,7 @@ def create_fsm():
 def edit_fsm(fsm_name):
     if fsm_name in finite_state_machines:
         fsm = finite_state_machines.get(fsm_name)
-        fsm_image = fsm.visualize_fsm()
+        fsm_image = fsm.visualize()
         return render_template('edit_fsm.html', fsm_name=fsm_name, fsm_image=fsm_image)
     else:
         return "FSM not found."
@@ -37,7 +37,7 @@ def add_transition(fsm_name):
         fsm.add_state(State(source_state))
         fsm.add_state(State(target_state))
         fsm.add_transition(source_state, target_state, transition_label, probability)
-        fsm_image = fsm.visualize_fsm()
+        fsm_image = fsm.visualize()
 
         return render_template('edit_fsm.html', fsm_name=fsm_name, fsm_image=fsm_image)
     else:
@@ -49,7 +49,7 @@ def mark_final_state(fsm_name):
         fsm = finite_state_machines.get(fsm_name)
         state_name = request.form.get('state_name')
         fsm.mark_state_as_final(state_name)
-        fsm_image = fsm.visualize_fsm()
+        fsm_image = fsm.visualize()
 
         return render_template('edit_fsm.html', fsm_name=fsm_name, fsm_image=fsm_image)
     else:
@@ -69,7 +69,7 @@ def superpose_fsm():
         print(superposed_fsm.format_as_string())
         finite_state_machines[fsm_name1 + " x " + fsm_name2] = superposed_fsm
 
-        superposed_fsm_image = superposed_fsm.visualize_fsm()
+        superposed_fsm_image = superposed_fsm.visualize()
         return render_template('superpose_fsm.html', fsm_name1=fsm_name1, fsm_name2=fsm_name2, superposed_fsm_image=superposed_fsm_image)
     else:
         return "One or both FSMs not found."

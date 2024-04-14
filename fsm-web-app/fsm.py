@@ -67,7 +67,7 @@ class FSM:
 
         return result
 
-    def visualize_fsm(self):
+    def visualize(self):
         pos = graphviz_layout(self.image)
         plt.figure()
         node_colors = []
@@ -79,7 +79,9 @@ class FSM:
             else:
                 node_colors.append('skyblue')
       
-        nx.draw(self.image, pos, with_labels=True, node_size=400, node_color=node_colors, font_size=8, font_color='black', font_weight='bold', arrowsize=12)
+        nx.draw(self.image, pos, with_labels=True, node_size=400, 
+            node_color=node_colors, font_size=8, 
+                font_color='black', font_weight='bold', arrowsize=12)
         edge_labels = self.get_edge_labels()
         print(edge_labels)
         nx.draw_networkx_edge_labels(
