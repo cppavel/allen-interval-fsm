@@ -70,7 +70,9 @@ def superpose_fsm():
         finite_state_machines[fsm_name1 + " x " + fsm_name2] = superposed_fsm
 
         superposed_fsm_image = superposed_fsm.visualize()
-        return render_template('superpose_fsm.html', fsm_name1=fsm_name1, fsm_name2=fsm_name2, superposed_fsm_image=superposed_fsm_image)
+        return render_template('superpose_fsm.html', 
+                fsm_name1=fsm_name1, fsm_name2=fsm_name2, 
+                    superposed_fsm_image=superposed_fsm_image)
     else:
         return "One or both FSMs not found."
 
