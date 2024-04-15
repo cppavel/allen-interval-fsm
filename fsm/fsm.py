@@ -203,30 +203,7 @@ class FSM:
         return (path, invalid)
 
 
-def independent(super_pose_fsm):
-    overlaps_probabilities = {}
-    during_probabilities = {}
-
-    for clock_gran in range(5, 15, 1):
-        clock_fsm = get_clock_fsm(clock_gran)
-        # clock_fsm.visualize().show_diagram(path=f"./clock_fsm_{clock_gran}.png")
-
-        clocked_intervals_fsm = super_pose_fsm.superpose(clock_fsm, is_clock=True)
-        # clocked_intervals_fsm.visualize().show_diagram(path=f"./superpose_clock_{clock_gran}.png")
-        paths = clocked_intervals_fsm.find_all_paths_to_final_state()
-        allen_counts = compute_allen_count(paths)
-        
-        print(allen_counts)
-        print(f"clock: {clock_gran}")
-        print(
-            (f"overlaps count (combinatorics): {calculate_long_relation_count_superposed(clock_gran - 1)}," 
-            f"simulated: {allen_counts['overlaps']}\n"))
-
-def monte_carlo(super_pose_fsm, gran, trials = 1000):
-    clock_fsm = get_clock_fsm(gran)
-    clocked_intervals_fsm = super_pose_fsm.superpose(clock_fsm, is_clock=True)
-    clocked_intervals_fsm.visualize(add_prob=True).show_diagram(
-        path=f"./superpose_clock_{gran}_probabilities.png")
+def monte_carlo(clocked_intervals_fsm, trials = 100000):
     trial_count = 0 
 
     paths = []
@@ -238,41 +215,14 @@ def monte_carlo(super_pose_fsm, gran, trials = 1000):
         
         trial_count+=1
 
-    print(compute_allen_count(paths))
+    allen_count = compute_allen_count(paths)
+    total_count = sum([x for x in allen_count.values()])
+
+    print(f"Total count: {total_count}")
+    print(f"Count of each relation: {allen_count}")
 
 
 if __name__ == "__main__":
-
-    # p_start = 0.25
-    # p = 0.1
-    # p_prime = 0.5
-    # alpha = 0.5
-
-    # start_1 = State("u_a")
-    # fsm_1 = FSM(start_1)
-    # fsm_1.add_state(State("li_a"))
-    # fsm_1.add_state(State("oli_a"))
-    # fsm_1.add_state(State("d_a"))
-    # fsm_1.mark_state_as_final("d_a")
-    # fsm_1.add_transition("u_a", "li_a", "la", p_start)
-    # fsm_1.add_transition("li_a", "oli_a","oa", (1 - alpha) * (1 - p))
-    # fsm_1.add_transition("li_a", "d_a", "ra", p)
-    # fsm_1.add_transition("oli_a", "d_a", "ra", p_prime)
-    # fsm_1.visualize(add_prob=True).show_diagram(path="./fsm1.png")
-
-    # start_2 = State("u_b")
-    # fsm_2 = FSM(start_2)
-    # fsm_2.add_state(State("li_b"))
-    # fsm_2.add_state(State("oli_b"))
-    # fsm_2.add_state(State("d_b"))
-    # fsm_2.mark_state_as_final("d_b")
-    # fsm_2.add_transition("u_b", "li_b", "lb", p_start)
-    # fsm_2.add_transition("li_b", "oli_b","ob", (1 - alpha) * (1 - p))
-    # fsm_2.add_transition("li_b", "d_b", "rb", p)
-    # fsm_2.add_transition("oli_b", "d_b", "rb", p_prime)
-    # fsm_2.visualize(add_prob=True).show_diagram(path="./fsm2.png")
-
-
     start_1 = State("u_a")
     fsm_1 = FSM(start_1)
     fsm_1.add_state(State("li_a"))
@@ -290,10 +240,6 @@ if __name__ == "__main__":
     fsm_2.add_transition("li_b", "d_b", "rb", 0.5)
 
     superpose_fsm = fsm_1.superpose(fsm_2)
-    superpose_fsm.visualize(add_prob=True).show_diagram(path='./allen_fsm.png')
-
-    # super_pose_fsm.visualize(add_prob=True).show_diagram(
-    #     path="./superpose_simple.png")
-    
-    # # independent(super_pose_fsm)
-    # monte_carlo(super_pose_fsm, 10, 1000000)
+    clock_fsm = get_clock_fsm(25)
+    clocked_fsm = superpose_fsm.superpose(clock_fsm, is_clock=True)
+    monte_carlo(clocked_fsm, 500000)
